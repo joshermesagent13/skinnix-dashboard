@@ -19,6 +19,7 @@ DATA_SOURCES = {
     "weekly_performance.csv": f"{PUB}/pub?gid=1919692199&single=true&output=csv",
     "monthly_performance.csv": f"{PUB}/pub?gid=1288091284&single=true&output=csv",
     "boost_shortlist.csv": f"{PUB}/pub?gid=1124296553&single=true&output=csv",
+    "shop_top_products.csv": f"{PUB}/pub?gid=839670933&single=true&output=csv",
 }
 
 # ---------- dark styling ----------
@@ -156,19 +157,36 @@ with tab1:
     chart = top15.melt(id_vars=["affiliate"], value_vars=["live_gmv_rm", "video_gmv_rm"],
                        var_name="channel", value_name="amount")
     st.bar_chart(chart, x="affiliate", y="amount", color="channel", height=420)
-    st.dataframe(lb.head(50), use_container_width=True, hide_index=True)
+    cols = ["affiliate", "orders", "gmv_rm", "live_gmv_rm", "video_gmv_rm", "live_share_pct",
+            "top_product_name", "top_product_share_pct", "channel"]
+    st.dataframe(lb[cols].head(50), use_container_width=True, hide_index=True)
 
 with tab2:
-    st.subheader("Top 5 Products per Affiliate")
-    cols = ["affiliate", "product_name", "gmv_rm", "orders", "live_gmv_rm", "video_gmv_rm"]
-    view = prods[cols] if not prods.empty and "product_name" in prods.columns else prods
-    st.dataframe(view.head(100), use_container_width=True, hide_index=True)
+    st.subheader("Products")
+    mode = st.selectbox("View", ["Per affiliate (top 5)", "Shop-wide: Daily",
+                                 "Shop-wide: Weekly", "Shop-wide: Monthly"])
+    if mode == "Per affiliate (top 5)":
+        cols = ["affiliate", "product_name", "gmv_rm", "orders", "live_gmv_rm", "video_gmv_rm"]
+        view = prods[cols] if not prods.empty and "product_name" in prods.columns else prods
+        st.dataframe(view.head(100), use_container_width=True, hide_index=True)
+    else:
+        shop = load("shop_top_products.csv")
+        ptype = {"Shop-wide: Daily": "daily", "Shop-wide: Weekly": "weekly",
+                 "Shop-wide: Monthly": "monthly"}[mode]
+        if shop.empty:
+            st.info("Shop-wide product data not available yet.")
+        else:
+            sub = shop[shop["period_type"] == ptype].sort_values("period", ascending=False)
+            st.dataframe(sub[["period", "rank", "product_name", "gmv_rm", "orders",
+                              "live_gmv_rm", "video_gmv_rm"]],
+                         use_container_width=True, hide_index=True)
 
 with tab3:
     st.subheader("Daily Sales Trend")
     if not daily.empty:
         d = daily.copy()
-        d["period"] = pd.to_datetime(d["period"])
+        d["period"] = pd.to_datetime(d["period"], format="mixed", errors="coerce")
+        d = d.dropna(subset=["period"])
         st.line_chart(d.set_index("period")[["live_gmv_rm", "video_gmv_rm"]], height=380)
     c_a, c_b = st.columns(2)
     with c_a:
