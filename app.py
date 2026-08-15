@@ -154,8 +154,8 @@ with tab1:
     st.subheader("Affiliate Leaderboard — LIVE vs VIDEO")
     top15 = lb.head(15).copy()
     chart = top15.melt(id_vars=["affiliate"], value_vars=["live_gmv_rm", "video_gmv_rm"],
-                       var_name="channel", value_name="gmv_rm")
-    st.bar_chart(chart, x="affiliate", y="gmv_rm", color="channel", height=420)
+                       var_name="channel", value_name="amount")
+    st.bar_chart(chart, x="affiliate", y="amount", color="channel", height=420)
     st.dataframe(lb.head(50), use_container_width=True, hide_index=True)
 
 with tab2:
